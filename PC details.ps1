@@ -1,9 +1,9 @@
-﻿
-$ArrComputers = "student3"
-
-#$Arrcomputers = read-host -prompt 'Please Enter Hostname'
+﻿#$ArrComputers = "George-P"
+clear-host
+$Arrcomputers = read-host -prompt 'Please Enter Hostname'
 
 #Specify the list of PC names in the ine above. "." means local system, delete as appropriate.
+# If no PCs are detected, the shell will display an error message "PC not found".
  
 
 
@@ -13,7 +13,7 @@ foreach ($Computer in $ArrComputers)
 {
 Try{
   
-    $computerip = get-wmiobject Win32_NetworkAdapterConfiguration  -Computer $Computer |
+    $computerip = get-wmiobject Win32_NetworkAdapterConfiguration  -Computer $Computer -ErrorAction Stop |
     Where { $_.IPAddress } | # filter the objects where an address actually exists
     Select -Expand IPAddress | # retrieve only the property *value*
     Where {$_ -notlike "*:*"}
@@ -26,10 +26,12 @@ Try{
     $computerHDD = Get-WmiObject Win32_LogicalDisk -ComputerName $Computer
     $computerMAC = Get-WmiObject Win32_NetworkAdapterConfiguration -Computer $computer | Where{$_.ipenabled -Match "True"} | Select MACaddress 
     $computermemory = (Get-WmiObject Win32_PhysicalMemory -computer $Computer | measure-object Capacity -sum).sum/1gb 
-    $hddss = Get-WmiObject Win32_LogicalDisk -ComputerName $Computer -ErrorAction Inquire
+    $hddss = Get-WmiObject Win32_LogicalDisk -ComputerName $Computer 
 
 }
-catch {Write-host "No Pc found"}
+catch {write-host "PC Not Found"
+
+break}
 
         write-host "System Information for: " $computerSystem.Name -BackgroundColor DarkCyan
         "-------------------------------------------------------"
@@ -51,4 +53,3 @@ catch {Write-host "No Pc found"}
         "Mac Addresses Ethernet/Wifi: "+ $computerMAC.MACaddress
         "-------------------------------------------------------"
  }
-
