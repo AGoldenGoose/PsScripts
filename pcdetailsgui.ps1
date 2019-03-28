@@ -5,12 +5,17 @@
 #>
 
 Add-Type -AssemblyName System.Windows.Forms
+
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
+
+
 $Form                            = New-Object system.Windows.Forms.Form
-$Form.ClientSize                 = '510,340'
+$Form.ClientSize                 = '510,325'
 $Form.text                       = "PC Details"
 $Form.TopMost                    = $false
+$form.ShowIcon                   = $False
+
 
 $Label1                          = New-Object system.Windows.Forms.Label
 $Label1.text                     = "Enter Computer name:"
@@ -22,7 +27,7 @@ $Label1.Font                     = 'Microsoft Sans Serif,10'
 
 $TextBox1                        = New-Object system.Windows.Forms.TextBox
 $TextBox1.multiline              = $false
-$TextBox1.width                  = 150
+$TextBox1.width                  = 170
 $TextBox1.height                 = 20
 $TextBox1.location               = New-Object System.Drawing.Point(155,9)
 $TextBox1.Font                   = 'Microsoft Sans Serif,10'
@@ -83,9 +88,9 @@ $TextBox3.Font                   = 'Microsoft Sans Serif,10'
 
 $TextBox4                        = New-Object system.Windows.Forms.TextBox
 $TextBox4.multiline              = $false
-$TextBox4.width                  = 230
+$TextBox4.width                  = 235
 $TextBox4.height                 = 20
-$TextBox4.location               = New-Object System.Drawing.Point(158,99)
+$TextBox4.location               = New-Object System.Drawing.Point(146,99)
 $TextBox4.Font                   = 'Microsoft Sans Serif,10'
 
 $TextBox5                        = New-Object system.Windows.Forms.TextBox
@@ -205,7 +210,7 @@ $TextBox12                       = New-Object system.Windows.Forms.TextBox
 $TextBox12.multiline             = $false
 $TextBox12.width                 = 140
 $TextBox12.height                = 20
-$TextBox12.location              = New-Object System.Drawing.Point(330,219)
+$TextBox12.location              = New-Object System.Drawing.Point(350,219)
 $TextBox12.Font                  = 'Microsoft Sans Serif,10'
 
 $Label15                         = New-Object system.Windows.Forms.Label
@@ -227,28 +232,28 @@ $Button1                         = New-Object system.Windows.Forms.Button
 $Button1.text                    = "OK"
 $Button1.width                   = 60
 $Button1.height                  = 30
-$Button1.location                = New-Object System.Drawing.Point(50,280)
+$Button1.location                = New-Object System.Drawing.Point(65,280)
 $Button1.Font                    = 'Microsoft Sans Serif,10'
 
 $Button2                         = New-Object system.Windows.Forms.Button
 $Button2.text                    = "Run"
 $Button2.width                   = 60
 $Button2.height                  = 30
-$Button2.location                = New-Object System.Drawing.Point(150,280)
+$Button2.location                = New-Object System.Drawing.Point(165,280)
 $Button2.Font                    = 'Microsoft Sans Serif,10'
 
 $Button3                         = New-Object system.Windows.Forms.Button
 $Button3.text                    = "Clear"
 $Button3.width                   = 60
 $Button3.height                  = 30
-$Button3.location                = New-Object System.Drawing.Point(250,280)
+$Button3.location                = New-Object System.Drawing.Point(265,280)
 $Button3.Font                    = 'Microsoft Sans Serif,10'
 
 $Button4                         = New-Object system.Windows.Forms.Button
 $Button4.text                    = "Export"
 $Button4.width                   = 60
 $Button4.height                  = 30
-$Button4.location                = New-Object System.Drawing.Point(350,280)
+$Button4.location                = New-Object System.Drawing.Point(365,280)
 $Button4.Font                    = 'Microsoft Sans Serif,10'
 
 $PictureBox1                     = New-Object system.Windows.Forms.PictureBox
@@ -264,7 +269,6 @@ $Form.controls.AddRange(@($Label1,$TextBox1,$Label3,$Label4,$Label5,$Label6,$Lab
 $Button1.Add_Click({ OK })
 $Button2.Add_Click{(Run)}
 $Button3.Add_Click{$textbox1.Clear()
-$Button4.Add_Click{export}
 $textbox2.Clear()
 $textbox3.Clear()
 $textbox4.Clear()
@@ -275,8 +279,8 @@ $textbox8.Clear()
 $textbox9.Clear()
 $textbox10.Clear()
 $textbox11.Clear()
-$textbox12.Clear()
-}
+$textbox12.Clear()}
+$Button4.Add_Click{export}
 
     
 function OK(){$Form.close()}
@@ -284,7 +288,15 @@ function OK(){$Form.close()}
 function Run(){ 
 
     try {
-        
+
+      
+        If ($textbox1.text.length -le 6) {$textbox1.text="*"+$textbox1.text+"*"} 
+
+
+        if ($textbox1.text.length -le 8) 
+            
+    {$textbox1.text = get-adcomputer -filter * -SearchBase "dc=xchristie, dc=nhs, dc=uk"-properties Description| Where-Object {$_.Description -like $textbox1.text} |Select -expand name}
+    #the -erroraction component needs to be below, so the app doesnt attempt the rest of the get-wmi queries, which wastes time /causes the app to hang.
     $computerCPU = get-wmiobject Win32_Processor -Computer $TextBox1.text -ErrorAction Stop | select -expand Name
     $TextBox2.text = $computerCPU   #Can also use this instead of foreach & then creating an object.
     $computerSystemmodel = get-wmiobject Win32_ComputerSystemproduct -Computer  $TextBox1.Text  | select -expand Name
@@ -318,7 +330,7 @@ function Run(){
     catch [System.Management.Automation.BreakException] { $TextBox1.text="PC Not Found"
         
    break}
-   catch  { $TextBox1.text="PC Not Found"
+   catch  { $TextBox1.text="PC Not Found/Switched Off"
         
    break}
    }
@@ -331,24 +343,38 @@ Function Clear {
 
 
 
-    function export (){
+function export () {
+    $computerSystem = get-wmiobject Win32_ComputerSystem -Computer $TextBox1.Text | select username
+    $computerSystemmodel = get-wmiobject Win32_ComputerSystemproduct -Computer  $TextBox1.Text  | select -expand Name
+    $computermemory = (Get-WmiObject Win32_PhysicalMemory -computer $TextBox1.text | measure-object Capacity -sum).sum/1gb 
+    $disk = Get-WmiObject Win32_LogicalDisk -ComputerName $textbox1.text #might be able to use an if/ else function here to display multiple drives if there are any- they are numbered, starting with C[0]
+    $disksize = ( "{0:N2}" -f ($disk.Size[0]/1GB))
+    $freedisk = ( "{0:N2}" -f ($disk.FreeSpace[0]/1GB)) + " (" + ( "{0:P2}" -f ($disk.FreeSpace[0]/$disk.Size[0])) + ")" 
+    $computerVideo = get-wmiobject Win32_VideoController -Computer $TextBox1.Text | select -expand description
+    $computerCPU = get-wmiobject Win32_Processor -Computer $TextBox1.text -ErrorAction Stop | select -expand Name
+    $computerOS = get-wmiobject Win32_OperatingSystem -Computer $TextBox1.Text  | foreach  { $_.caption }
+    $boot= get-wmiobject Win32_OperatingSystem -Computer $TextBox1.Text
+    $user= get-wmiobject Win32_ComputerSystem -computername $TextBox1.text | select -expand  UserName 
+    if ($user -eq $null) {$user2 = "No Current User" } else { $user2 = $user }
+    
 $csvObject = New-Object PSObject -property  @{
     'PCName' = $TextBox1.text
-    'Manufacturer' = $computerSystem.Manufacturer
-    "Version" = $computerSystem.model
-    'SerialNumber' = $computerBIOS.SerialNumber
-    'RAM' = $computermemory
+    "Model" = $computerSystemmodel
+    'RAM/GB' = $computermemory
     "HDDSizeGB" = $disksize
-    #'HDDSizeGB' = "{0:N2}" -f ($computerHDD.Size/1GB) #Removed as it interferes with laptops that are the same model but different asset tag.
+    #'HDDSizeGB' = "{0:N2}" -f ($computerHDD.Size/1GB) #Removed as it interferes with laptops that are the same model but different asset tag. 
     "HDDSpace" = $freedisk
     #'HDDFree' = "{0:P2}" -f ($computerHDD.FreeSpace/$computerHDD.Size) #Removed as it interferes with laptops that are the same model but different asset tag.
     'GPU' = $computerVideo
     'CPU' = $computerCPU
     'OS' = $computerOS
-    'User' = $user
+    'User' = $user2
     'BootTime' = $boot.ConvertToDateTime($boot.LastBootUpTime)
 }
-$csvObject | Select PCName, Manufacturer, Model, Version , Ram, CPU, GPU, User , HDDSizeGB , HDDSpace ,   OS, SerialNumber | Export-Csv 'C:\system-info2.csv' -NoTypeInformation -Append}
+$csvObject | Select PCName, Model, Ram/GB, CPU, GPU, User, HDDSizeGB , HDDSpace , OS,BootTime | Export-Csv 'C:\pc-info.csv' -NoTypeInformat -Append}
+
 #Write your logic code here
-    
+
+ 
 [void]$Form.ShowDialog()
+
