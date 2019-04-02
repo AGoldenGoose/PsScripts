@@ -232,35 +232,35 @@ $Button1                         = New-Object system.Windows.Forms.Button
 $Button1.text                    = "OK"
 $Button1.width                   = 60
 $Button1.height                  = 30
-$Button1.location                = New-Object System.Drawing.Point(65,280)
+$Button1.location                = New-Object System.Drawing.Point(65,270)
 $Button1.Font                    = 'Microsoft Sans Serif,10'
 
 $Button2                         = New-Object system.Windows.Forms.Button
 $Button2.text                    = "Run"
 $Button2.width                   = 60
 $Button2.height                  = 30
-$Button2.location                = New-Object System.Drawing.Point(165,280)
+$Button2.location                = New-Object System.Drawing.Point(165,270)
 $Button2.Font                    = 'Microsoft Sans Serif,10'
 
 $Button3                         = New-Object system.Windows.Forms.Button
 $Button3.text                    = "Clear"
 $Button3.width                   = 60
 $Button3.height                  = 30
-$Button3.location                = New-Object System.Drawing.Point(265,280)
+$Button3.location                = New-Object System.Drawing.Point(265,270)
 $Button3.Font                    = 'Microsoft Sans Serif,10'
 
 $Button4                         = New-Object system.Windows.Forms.Button
 $Button4.text                    = "Export"
 $Button4.width                   = 60
 $Button4.height                  = 30
-$Button4.location                = New-Object System.Drawing.Point(365,280)
+$Button4.location                = New-Object System.Drawing.Point(365,270)
 $Button4.Font                    = 'Microsoft Sans Serif,10'
 
 $PictureBox1                     = New-Object system.Windows.Forms.PictureBox
 $PictureBox1.width               = 240
 $PictureBox1.height              = 120
 $PictureBox1.location            = New-Object System.Drawing.Point(345,-20)
-$PictureBox1.imageLocation       = "\\christie\dfsroot$\homedrives1\George.Brophy\PSScripts\PC Details\christie1.png"
+$PictureBox1.imageLocation       = "C:\Program Files (x86)\PC Details\christie1.png"
 $PictureBox1.SizeMode            = [System.Windows.Forms.PictureBoxSizeMode]::zoom
 $Form.controls.AddRange(@($Label1,$TextBox1,$Label3,$Label4,$Label5,$Label6,$Label7,$TextBox2,$TextBox3,$TextBox4,$TextBox5,$TextBox6,$Label8,$TextBox7,$Label9,$TextBox8,$Label10,$TextBox9,$Label11,$TextBox10,$Label12,$TextBox11,$Label13,$TextBox12,$Label14,$Label15,$Button1,$Button2,$Button3,$button4,$PictureBox1 ))
 
@@ -356,7 +356,12 @@ function export () {
     $boot= get-wmiobject Win32_OperatingSystem -Computer $TextBox1.Text
     $user= get-wmiobject Win32_ComputerSystem -computername $TextBox1.text | select -expand  UserName 
     if ($user -eq $null) {$user2 = "No Current User" } else { $user2 = $user }
-    
+    $computerMAC = Get-WmiObject Win32_NetworkAdapterConfiguration -Computer $TextBox1.Text | Where{$_.ipenabled -Match "True"} | Select -expand MACaddress 
+    $computerip = get-wmiobject Win32_NetworkAdapterConfiguration  -Computer $TextBox1.Text |
+    Where { $_.IPAddress } | # filter the objects where an address actually exists
+    Select -Expand IPAddress | # retrieve only the property *value*
+    Where {$_ -notlike "*:*"}
+
 $csvObject = New-Object PSObject -property  @{
     'PCName' = $TextBox1.text
     "Model" = $computerSystemmodel
@@ -370,8 +375,10 @@ $csvObject = New-Object PSObject -property  @{
     'OS' = $computerOS
     'User' = $user2
     'BootTime' = $boot.ConvertToDateTime($boot.LastBootUpTime)
+    'IP' = $computerip
+    'MAC' = $computerMAC
 }
-$csvObject | Select PCName, Model, Ram/GB, CPU, GPU, User, HDDSizeGB , HDDSpace , OS,BootTime | Export-Csv 'C:\pc-info.csv' -NoTypeInformat -Append}
+$csvObject | Select PCName, Model, Ram/GB, CPU, GPU, User, HDDSizeGB , HDDSpace , OS,BootTime, IP, MAC | Export-Csv 'C:\Program Files (x86)\PC Details\pc-info.csv' -NoTypeInformat -Append}
 
 #Write your logic code here
 
