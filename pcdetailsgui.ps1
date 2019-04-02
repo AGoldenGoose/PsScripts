@@ -11,7 +11,7 @@ Add-Type -AssemblyName System.Windows.Forms
 
 
 $Form                            = New-Object system.Windows.Forms.Form
-$Form.ClientSize                 = '510,325'
+$Form.ClientSize                 = '510,325' 
 $Form.text                       = "PC Details"
 $Form.TopMost                    = $false
 $form.ShowIcon                   = $False
